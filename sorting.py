@@ -1,4 +1,7 @@
 import random
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
 
 # 定义个体类
 # class Individual:
@@ -34,18 +37,38 @@ import random
 #     def fitness(self):
 #         return self._fitness
 
+
+df_origin = df = pd.read_excel('two_columns_dates.xlsx')
+
+
 # 定义个体类
 class Individual:
     def __init__(self, genes):
         self.genes = genes
         # self.fitness = self.calculate_fitness()
-    
+
+    def calculate_loss(self, row):
+        date1 = row['date1']
+        date2 = row['date2']
+        if date1 < date2:
+            return (date2 - date1).days
+        else:
+            return (date1 - date2).days * 100
     @property
     def fitness(self):
-        # target_sequence = sorted(self.genes)
-        target_sequence = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        return sum(1 for i, j in zip(self.genes, target_sequence) if i == j)
+        # # target_sequence = sorted(self.genes)
+        # target_sequence = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        # return sum(1 for i, j in zip(self.genes, target_sequence) if i == j)
+        seq = self.genes
+        # print(df)
+        # 根据 seq 对 row['date1']进行排序
+        new_df = df_origin.iloc[np.argsort(df_origin['date1'].map(lambda x: seq[np.where(df_origin['date1'].values == x)[0][0]]))].reset_index(drop=True)
+        merged_df = pd.DataFrame({'date1': new_df['date1'], 'date2': df['date2']})
     
+        merged_df['loss'] = df.apply(self.calculate_loss, axis=1)
+        return merged_df['loss'].sum()
+
+            
     # def calculate_fitness(self):
     #     # 计算适应度，这里简单假设排序后的基因与目标序列越接近，适应度越高
     #     target_sequence = sorted(self.genes)
@@ -139,7 +162,7 @@ class GeneticAlgorithm:
 # # 测试
 sum_fit = 0
 for _ in range(10):
-    ga = GeneticAlgorithm(generarions_num=100, population_size=50, chromosome_length=30, mutation_rate=0.1)
+    ga = GeneticAlgorithm(generarions_num=100, population_size=50, chromosome_length=10, mutation_rate=0.1)
     best_individual = ga.run()
     sum_fit += best_individual.fitness
 print("sum_fitness:{}".format(sum_fit))
